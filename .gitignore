@@ -1,5 +1,5 @@
 PMSURV.results
-populate.model
+populate.model*
 populate.cmd
 evolve.model
 evolve.cmd
@@ -15,4 +15,5 @@ fortran/build
 fortran/compile.txt
 *.swp
 threadpop.py
-
+\#*\#
+.DS_Store
