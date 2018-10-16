@@ -10,9 +10,14 @@ junk.py
 *.so
 *.o
 *~
+#*#
 *pyc
 fortran/build
 fortran/compile.txt
+build/
+dist/
+setup-requires
+.sconsign.dblite
 *.swp
 threadpop.py
 \#*\#
