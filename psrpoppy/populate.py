@@ -42,10 +42,12 @@ class PopulateException(Exception):
 def generate(ngen,
              surveyList=None,
              pDistType='lnorm',
+             pdotDistType='lnorm',
              radialDistType='lfl06',
              radialDistPars=7.5,
              electronModel='ne2001',
              pDistPars=[2.7, -0.34],
+             pdotDistPars=[-19.9, 0.5],
              siDistPars=[-1.6, 0.35],
              lumDistType='lnorm',
              lumDistPars=[-1.1, 0.9],
@@ -67,9 +69,12 @@ def generate(ngen,
     surveyList -- a list of surveys you want to use to try and detect
         the pulsars
     pDistType -- the pulsar period distribution model to use (def=lnorm)
+    pdotDistType -- the pulsar period derivative distribution model to
+                    use (def=lnorm)
     radialDistType -- radial distribution model
     electronModel -- mode to use for Galactic electron distribution
     pDistPars -- parameters to use for period distribution
+    pdotDistPars -- parameters to use for period derivative dist
     siDistPars -- parameters to use for spectral index distribution
     lumDistPars -- parameters to use for luminosity distribution
     radialDistPars -- parameters for radial distribution
@@ -88,7 +93,11 @@ def generate(ngen,
 
     if pDistType not in ['lnorm', 'norm', 'cc97', 'lorimer12']:
         print "Unsupported period distribution: {0}".format(pDistType)
-
+        
+    if pdotDistType not in ['lnorm']:
+        print "Unsupported period derivative distribution: {0}".format(
+            pdotDistType)
+        
     if radialDistType not in ['lfl06', 'yk04', 'isotropic',
                               'slab', 'disk', 'gauss']:
         print "Unsupported radial distribution: {0}".format(radialDistType)
@@ -104,6 +113,7 @@ def generate(ngen,
 
     # need to use properties in this class so they're get/set-type props
     pop.pDistType = pDistType
+    pop.pdotDistType = pdotDistType
     pop.radialDistType = radialDistType
     pop.electronModel = electronModel
     pop.lumDistType = lumDistType
@@ -127,6 +137,10 @@ def generate(ngen,
 
     pop.zscaleType = zscaleType
     pop.zscale = zscale
+
+    if pop.pdotDistType == 'lnorm':
+         pop.pdotmean, pop.pdotsigma = \
+                pdotDistPars[0], pdotDistPars[1]
 
     # store the dict of arguments inside the model. Could be useful.
     try:
@@ -173,7 +187,7 @@ def generate(ngen,
         # Declare new pulsar object
         p = Pulsar()
 
-        # period, alpha, rho, width distribution calls
+        # period, pdot, alpha, rho, width distribution calls
         # Start creating the pulsar!
         if pop.pDistType == 'lnorm':
             p.period = dists.drawlnorm(pop.pmean, pop.psigma)
@@ -186,6 +200,11 @@ def generate(ngen,
             sys.exit()
         elif pop.pDistType == 'lorimer12':
             p.period = _lorimer2012_msp_periods()
+
+        # Draw pdots from lognormal distribution, assuming
+        # independent of period. Is this true?
+        if pop.pdotDistType == 'lnorm':
+            p.pdot = dists.drawlnorm(pop.pdotmean, pop.pdotsigma)
 
         if duty_percent > 0.:
             # use a simple duty cycle for each pulsar
@@ -505,7 +524,18 @@ if __name__ == '__main__':
                         default=[2.7, -0.34],
                         help='period distribution mean and std dev \
                                  (def= [2.7, -0.34], Lorimer et al. 2006)')
+    
+    # pdot distribution parameters
+    parser.add_argument('-pdotdist', nargs=1, required=False, default=['lnorm'],
+                        help='type of distribution to use for period \
+                        derivatives',
+                        choices=['lnorm'])
 
+    parser.add_argument('-pdot', nargs=2, required=False, type=float,
+                        default=[-19.9, 0.5],
+                        help='period derivative distribution mean and std dev \
+                                 (def= [-19.9, 0.5], Needs justification)')
+        
     # luminosity distribution parameters
     parser.add_argument('-ldist', nargs=1, required=False, default=['lnorm'],
                         help='distribution to use for luminosities',
