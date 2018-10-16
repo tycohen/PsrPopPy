@@ -88,7 +88,7 @@ def generate(ngen,
     pop = Population()
 
     # check that the distribution types are supported....
-    if lumDistType not in ['lnorm', 'pow']:
+    if lumDistType not in ['lnorm', 'pow', 'fk06']:
         print "Unsupported luminosity distribution: {0}".format(lumDistType)
 
     if pDistType not in ['lnorm', 'norm', 'cc97', 'lorimer12']:
@@ -128,6 +128,12 @@ def generate(ngen,
     if pop.lumDistType == 'lnorm':
         pop.lummean, pop.lumsigma = \
                 lumDistPars[0], lumDistPars[1]
+    elif pop.lumDistType == 'fk06':
+        try:
+            pop.lumPar1, pop.lumPar2, pop.lumPar3 = \
+                lumDistPars[0], lumDistPars[1], lumDistPars[2]
+        except ValueError:
+            raise PopulateException('Not enough lum distn parameters for "fk06"')
     else:
         try:
             pop.lummin, pop.lummax, pop.lumpow = \
@@ -141,6 +147,8 @@ def generate(ngen,
     if pop.pdotDistType == 'lnorm':
          pop.pdotmean, pop.pdotsigma = \
                 pdotDistPars[0], pdotDistPars[1]
+    else:
+        sys.exit()
 
     # store the dict of arguments inside the model. Could be useful.
     try:
@@ -304,6 +312,11 @@ def generate(ngen,
         if pop.lumDistType == 'lnorm':
             p.lum_1400 = dists.drawlnorm(pop.lummean,
                                          pop.lumsigma)
+        elif pop.lumDistType == 'fk06':
+            p.lum_1400 = luminosity_fk06(p,
+                            alpha=pop.lumPar1,
+                            beta=pop.lumPar2,
+                            gamma=pop.lumPar3)
         else:
             p.lum_1400 = dists.powerlaw(pop.lummin,
                                         pop.lummax,
@@ -383,6 +396,22 @@ def generate(ngen,
 
     return pop
 
+# This function should be external since its called by evolve and populate
+def luminosity_fk06(pulsar, alpha=-1.4, beta=0.5, gamma=0.35):
+    """Equation 14 from  Ridley & Lorimer 2010 
+       References Faucher and Kaspi 2006 
+       Rajwade et al. 2016 find gamma = 0.009 for MSPs but assume
+       alpha and beta same as for classical pulsars. Unsubstantiated.
+    """
+    # variables to use in the equation
+    delta_l = random.gauss(0.0, 0.8)
+
+    # the equation
+    logL = math.log10(gamma) + alpha*math.log10(pulsar.period/1000.) + \
+        beta * math.log10(pulsar.pdot * 1.0e15) + delta_l
+
+    # set L
+    return 10.0**logL
 
 def _lorimer2012_msp_periods():
     """Picks a period at random from Dunc's
@@ -539,7 +568,7 @@ if __name__ == '__main__':
     # luminosity distribution parameters
     parser.add_argument('-ldist', nargs=1, required=False, default=['lnorm'],
                         help='distribution to use for luminosities',
-                        choices=['lnorm', 'pow'])
+                        choices=['lnorm', 'pow', 'fk06'])
     parser.add_argument('-l', nargs='+', required=False, type=float,
                         default=[-1.1, 0.9],
                         help='luminosity distribution mean and std dev \
