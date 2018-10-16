@@ -20,4 +20,7 @@ setup-requires
 .sconsign.dblite
 *.swp
 threadpop.py
-
+build/
+dist/
+setup-requires/
+.sconsign.dblite
