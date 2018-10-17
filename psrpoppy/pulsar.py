@@ -22,6 +22,8 @@ class Pulsar(Orbit):
                  galCoords=None,
                  r0=None,
                  dtrue=None,
+                 v2D=None,
+                 propmo=None,
                  lum_1400=None,
                  spindex=None,
                  alpha=None,
@@ -38,6 +40,7 @@ class Pulsar(Orbit):
                  *args,
                  **kwargs):
         """___init___ function for the Pulsar class"""
+        # Need better docstring with description and units
 
         # initialise the inherited orbit class
         super(Pulsar, self).__init__(*args, **kwargs)
@@ -59,6 +62,9 @@ class Pulsar(Orbit):
         self.lum_1400 = lum_1400
         self.spindex = spindex
         self.scindex = scindex
+
+        self.v2D = v2D
+        self.propmo = propmo
 
         # set the scattering timescale
         # for 1.4 GHz (will scale to obs freq)
