@@ -51,6 +51,8 @@ def generate(ngen,
              siDistPars=[-1.6, 0.35],
              lumDistType='lnorm',
              lumDistPars=[-1.1, 0.9],
+             velDistType='gauss',
+             velDistPars=[0., 100.],
              zscaleType='exp',
              zscale=0.33,
              duty_percent=6.,
@@ -77,6 +79,8 @@ def generate(ngen,
     pdotDistPars -- parameters to use for period derivative dist
     siDistPars -- parameters to use for spectral index distribution
     lumDistPars -- parameters to use for luminosity distribution
+    velDistType -- single velocity component distribution model
+    velDistPars -- parameters for velocity distribution
     radialDistPars -- parameters for radial distribution
     zscale -- if using exponential z height, set it here (in kpc)
     scindex -- spectral index of the scattering model
@@ -90,6 +94,9 @@ def generate(ngen,
     # check that the distribution types are supported....
     if lumDistType not in ['lnorm', 'pow', 'fk06']:
         print "Unsupported luminosity distribution: {0}".format(lumDistType)
+
+    if velDistType not in ['gauss']:
+       print "Unsupported velocity distribution: {0}".format(velDistType)
 
     if pDistType not in ['lnorm', 'norm', 'cc97', 'lorimer12']:
         print "Unsupported period distribution: {0}".format(pDistType)
@@ -117,6 +124,7 @@ def generate(ngen,
     pop.radialDistType = radialDistType
     pop.electronModel = electronModel
     pop.lumDistType = lumDistType
+    pop.velDistType = velDistType
 
     pop.rsigma = radialDistPars
     pop.pmean, pop.psigma = pDistPars
@@ -145,8 +153,20 @@ def generate(ngen,
     pop.zscale = zscale
 
     if pop.pdotDistType == 'lnorm':
-         pop.pdotmean, pop.pdotsigma = \
+        try: 
+            pop.pdotmean, pop.pdotsigma = \
                 pdotDistPars[0], pdotDistPars[1]
+        except ValueError:
+            raise PopulateException('Not enough pdot distn parameters')            
+    else:
+        sys.exit()
+
+    if pop.velDistType == 'gauss':
+        try:
+            pop.velmean, pop.velsigma = \
+                velDistPars[0], velDistPars[1]
+        except ValueError:
+            raise PopulateException('Not enough velocity distn parameters')
     else:
         sys.exit()
 
@@ -213,6 +233,10 @@ def generate(ngen,
         # independent of period. Is this true?
         if pop.pdotDistType == 'lnorm':
             p.pdot = dists.drawlnorm(pop.pdotmean, pop.pdotsigma)
+
+        # Draw 2D velocity from independent normal dist
+        if pop.velDistType == 'gauss':
+            p.v2D = velocity_2D(pop.velmean, pop.velsigma)
 
         if duty_percent > 0.:
             # use a simple duty cycle for each pulsar
@@ -308,6 +332,9 @@ def generate(ngen,
         p.scindex = scindex
         # then calc scatter time
         p.t_scatter = go.scatter_bhat(p.dm, p.scindex)
+
+        # calculate proper motion in mas/yr
+        p.propmo = p.v2D * 0.211 / p.dtrue
 
         if pop.lumDistType == 'lnorm':
             p.lum_1400 = dists.drawlnorm(pop.lummean,
@@ -412,6 +439,18 @@ def luminosity_fk06(pulsar, alpha=-1.4, beta=0.5, gamma=0.35):
 
     # set L
     return 10.0**logL
+
+def velocity_2D(vmean, vsigma):
+    """
+    Compute 2D transverse velocity from single components
+    perpendicular to LOS drawn from distribution.
+    Assumes 2D distribution is symmetrical in both directions.
+    """
+    v0 = random.gauss(vmean, vsigma)
+    v1 = random.gauss(vmean, vsigma)
+    v2D = math.sqrt(v0**2 + v1**2)
+    
+    return v2D
 
 def _lorimer2012_msp_periods():
     """Picks a period at random from Dunc's
@@ -553,6 +592,17 @@ if __name__ == '__main__':
                         default=[2.7, -0.34],
                         help='period distribution mean and std dev \
                                  (def= [2.7, -0.34], Lorimer et al. 2006)')
+
+    # 2D velocity distribution parameters
+    parser.add_argument('-veldist', nargs=1, required=False, default=['gauss'],
+                        help='type of distribution to use for transverse \
+                                velocities',
+                        choices=['gauss'])
+
+    parser.add_argument('-vel', nargs=2, required=False, type=float,
+                        default=[0, 100],
+                        help='velocity distribution mean and std dev in km/s \
+                                 (def= [0, 100], Gonzalez et al. 2011)')
     
     # pdot distribution parameters
     parser.add_argument('-pdotdist', nargs=1, required=False, default=['lnorm'],
@@ -630,6 +680,7 @@ if __name__ == '__main__':
                    radialDistPars=args.r,
                    pDistPars=args.p,
                    lumDistPars=args.l,
+                   velDistPars=args.vel,
                    siDistPars=args.si,
                    zscaleType=args.zdist[0],
                    zscale=args.z,
