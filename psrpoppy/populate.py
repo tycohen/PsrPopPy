@@ -52,7 +52,7 @@ def generate(ngen,
              lumDistType='lnorm',
              lumDistPars=[-1.1, 0.9],
              velDistType='gauss',
-             velDistPars=[0., 100.],
+             velDistPars=[0., 71.81],
              zscaleType='exp',
              zscale=0.33,
              duty_percent=6.,
@@ -600,9 +600,9 @@ if __name__ == '__main__':
                         choices=['gauss'])
 
     parser.add_argument('-vel', nargs=2, required=False, type=float,
-                        default=[0, 100],
+                        default=[0, 71.81],
                         help='velocity distribution mean and std dev in km/s \
-                                 (def= [0, 100], Gonzalez et al. 2011)')
+                                 (def= [0, 71.81], Gonzalez et al. 2011)')
     
     # pdot distribution parameters
     parser.add_argument('-pdotdist', nargs=1, required=False, default=['lnorm'],
