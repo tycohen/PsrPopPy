@@ -52,7 +52,7 @@ def generate(ngen,
              lumDistType='lnorm',
              lumDistPars=[-1.1, 0.9],
              velDistType='gauss',
-             velDistPars=[0., 71.81],
+             velDistPars=[0., 86.17],
              zscaleType='exp',
              zscale=0.33,
              duty_percent=6.,
@@ -442,9 +442,10 @@ def luminosity_fk06(pulsar, alpha=-1.4, beta=0.5, gamma=0.35):
 
 def velocity_2D(vmean, vsigma):
     """
-    Compute 2D transverse velocity from single components
+    Compute 2D transverse velocity in the pulsars
+    local standard of rest. Components are 
     perpendicular to LOS drawn from distribution.
-    Assumes 2D distribution is symmetrical in both directions.
+    Assumes no preferential kick direction.
     """
     v0 = random.gauss(vmean, vsigma)
     v1 = random.gauss(vmean, vsigma)
@@ -600,9 +601,9 @@ if __name__ == '__main__':
                         choices=['gauss'])
 
     parser.add_argument('-vel', nargs=2, required=False, type=float,
-                        default=[0, 71.81],
+                        default=[0, 86.17],
                         help='velocity distribution mean and std dev in km/s \
-                                 (def= [0, 71.81], Gonzalez et al. 2011)')
+                                 (def= [0, 86.17], Gonzalez et al. 2011)')
     
     # pdot distribution parameters
     parser.add_argument('-pdotdist', nargs=1, required=False, default=['lnorm'],
