@@ -157,7 +157,7 @@ def generate(ngen,
             pop.pdotmean, pop.pdotsigma = \
                 pdotDistPars[0], pdotDistPars[1]
         except ValueError:
-            raise PopulateException('Not enough pdot distn parameters')            
+            raise PopulateException('Not enough pdot distn parameters')
     else:
         sys.exit()
 
@@ -234,9 +234,11 @@ def generate(ngen,
         if pop.pdotDistType == 'lnorm':
             p.pdot = dists.drawlnorm(pop.pdotmean, pop.pdotsigma)
 
-        # Draw 2D velocity from independent normal dist
+        # Draw perp  velocity components from independent normal dist           
         if pop.velDistType == 'gauss':
-            p.v2D = velocity_2D(pop.velmean, pop.velsigma)
+            p.vels = (random.gauss(pop.velmean, pop.velsigma),
+                    random.gauss(pop.velmean, pop.velsigma),
+                    random.gauss(pop.velmean, pop.velsigma))
 
         if duty_percent > 0.:
             # use a simple duty cycle for each pulsar
@@ -333,9 +335,6 @@ def generate(ngen,
         # then calc scatter time
         p.t_scatter = go.scatter_bhat(p.dm, p.scindex)
 
-        # calculate proper motion in mas/yr
-        p.propmo = p.v2D * 0.211 / p.dtrue
-
         if pop.lumDistType == 'lnorm':
             p.lum_1400 = dists.drawlnorm(pop.lummean,
                                          pop.lumsigma)
@@ -348,6 +347,9 @@ def generate(ngen,
             p.lum_1400 = dists.powerlaw(pop.lummin,
                                         pop.lummax,
                                         pop.lumpow)
+
+        # calc proper motion
+        p.pm = proper_motion(p)
 
         # add in orbital parameters
         if orbits:
@@ -440,18 +442,37 @@ def luminosity_fk06(pulsar, alpha=-1.4, beta=0.5, gamma=0.35):
     # set L
     return 10.0**logL
 
-def velocity_2D(vmean, vsigma):
+def proper_motion(pulsar):
     """
-    Compute 2D transverse velocity in the pulsars
-    local standard of rest. Components are 
-    perpendicular to LOS drawn from distribution.
-    Assumes no preferential kick direction.
+    Compute proper motion in mas/yr
     """
-    v0 = random.gauss(vmean, vsigma)
-    v1 = random.gauss(vmean, vsigma)
-    v2D = math.sqrt(v0**2 + v1**2)
     
-    return v2D
+    rsun = 8.5 #kpc
+    t = math.atan2(pulsar.galCoords[1], pulsar.galCoords[0])
+
+    # approximate rotation curve
+    if abs(pulsar.r0) > 3.: # kpc
+        v_r = 222.
+    else:
+        v_r = 74. * abs(pulsar.r0)
+
+    # velocity components
+    vtot_x = pulsar.vels[0] + v_r * math.sin(t) - 222.
+    vtot_y = pulsar.vels[1] - v_r * math.cos(t)
+    vtot_z = pulsar.vels[2]
+    vtot = math.sqrt(vtot_x ** 2 + vtot_y ** 2 + vtot_z ** 2)
+    norm = math.sqrt(pulsar.galCoords[0] ** 2 + \
+                     (pulsar.galCoords[1] - rsun) ** 2 + \
+                     pulsar.galCoords[2] ** 2) 
+    v_para = (vtot_x * pulsar.galCoords[0] + \
+              vtot_y * (pulsar.galCoords[1] - rsun) + \
+              vtot_z * pulsar.galCoords[2]) / norm
+    v_perp = math.sqrt(vtot ** 2 - v_para ** 2)
+
+    # Compute proper motion from 2D v component perp to LOS
+    pm = v_perp * 0.211 / pulsar.dtrue
+    
+    return pm
 
 def _lorimer2012_msp_periods():
     """Picks a period at random from Dunc's
