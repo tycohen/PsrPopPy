@@ -28,6 +28,7 @@ class Pulsar(Orbit):
                  spindex=None,
                  alpha=None,
                  rho=None,
+                 width_ms=None,
                  width_degree=None,
                  snr=None,
                  beaming=None,
@@ -72,6 +73,7 @@ class Pulsar(Orbit):
 
         self.alpha = alpha
         self.rho = rho
+        self.width_ms = width_ms
         self.width_degree = width_degree
 
         self.beaming = beaming

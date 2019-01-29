@@ -246,14 +246,14 @@ def generate(ngen,
             width = (float(duty_percent)/100.) * p.period**0.9
             width = math.log10(width)
             width = dists.drawlnorm(width, 0.3)
-
+            p.width_ms = width
             p.width_degree = width*360./p.period
         else:
             # use the model to caculate if beaming
             p.alpha = _genAlpha()
 
             p.rho, p.width_degree = _genRhoWidth(p)
-
+            p.width_ms = p.width_degree * p.period / 360.
             if p.width_degree == 0.0 and p.rho == 0.0:
                 continue
             # is pulsar beaming at us? If not, move on!
@@ -526,7 +526,7 @@ def _genRhoWidth(psr):
     # cut off period for model
     perCut = 30.0
 
-    # calclate rho
+    # calclate rho (Kramer et al., 1998)
     randfactor = random.uniform(-.15, .15)
     if psr.period > perCut:
         rho = _rhoLaw(psr.period)
