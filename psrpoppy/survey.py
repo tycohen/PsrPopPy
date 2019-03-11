@@ -95,7 +95,7 @@ def makepointing(coord1, coord2, coordtype):
 
         if gl > 180.:
             gl -= 360.
-
+        
     else:
         if coord1 > 180.:
             coord1 -= 360.
@@ -103,7 +103,7 @@ def makepointing(coord1, coord2, coordtype):
         gl = coord1
         gb = coord2
 
-    return (coord1, coord2)
+    return (gl, gb)
 
 
 class Survey:
