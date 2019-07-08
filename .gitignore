@@ -9,6 +9,7 @@ junk.py
 *.results
 *.so
 *.o
+*.os
 *~
 #*#
 *pyc
